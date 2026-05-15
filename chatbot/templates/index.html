@@ -534,7 +534,7 @@ async function sendMessage(){
 
     try{
 
-        let response = await fetch('http://127.0.0.1:8000/chat/',{
+        let response = await fetch('/chat/',{
 
             method:'POST',
 
@@ -620,7 +620,7 @@ async function uploadPDF(){
 
     formData.append("pdf", file);
 
-    let response = await fetch('http://127.0.0.1:8000/analyze-pdf/',{
+    let response = await fetch('/analyze-pdf/',{
 
         method:'POST',
 
