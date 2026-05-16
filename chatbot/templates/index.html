@@ -401,6 +401,7 @@ const doctorsData = {
         image:"https://cdn-icons-png.flaticon.com/512/387/387561.png",
         role:"Dermatologist",
         welcome:"Hello 👋 I am your Skin Specialist."
+        
     },
 
     "Neuro Specialist": {
@@ -565,7 +566,10 @@ async function sendMessage(){
 
             <div class="bubble">
 
-                ${data.reply}
+                ${data.reply
+                   .replace(/\*\*/g, "")
+                   .replace(/\n/g, "<br>")
+                 }
 
             </div>
 
