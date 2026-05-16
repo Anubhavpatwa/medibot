@@ -318,7 +318,8 @@ def chat(request):
     - If user says only "hi", "hello", or "hey",
       reply only:
       "Hello 👋 I am your Medical Expert AI. How can I help you today?"
-
+      if user says only "thank you" or "thanks",
+      reply only: "thank you my dear stay healthy! Is there anything else I can help you with?"
     RESPONSE RULES:
     - Keep responses short and professional
     - Avoid huge paragraphs
