@@ -7,4 +7,7 @@ urlpatterns = [
 
     path('chat/', views.chat),
 
+    path('analyze-image/', views.analyze_image),
+
+    path('analyze-pdf/', views.analyze_pdf),
 ]

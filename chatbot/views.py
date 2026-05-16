@@ -1,3 +1,6 @@
+import fitz
+from PIL import Image
+import google.generativeai as genai
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -10,7 +13,8 @@ import os
 import json
 
 load_dotenv()
-print(os.getenv("GROQ_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+print(os.getenv("GEMINI_API_KEY"))
 client = Groq(
 
     api_key=os.getenv("GROQ_API_KEY")
@@ -25,6 +29,7 @@ def home(request):
 
 @csrf_exempt
 def chat(request):
+    
 
     if request.method == "POST":
 
@@ -397,3 +402,115 @@ def chat(request):
              "reply": str(e)
 
     })
+@csrf_exempt
+def analyze_image(request):
+
+    if request.method == "POST":
+
+        try:
+
+            image_file = request.FILES['image']
+
+            image = Image.open(image_file)
+
+            model = genai.GenerativeModel('gemini-1.5-flash')
+
+            response = model.generate_content([
+
+                """
+                You are a professional medical image analysis AI.
+
+                Analyze this medical image professionally.
+
+                Explain:
+                - Possible condition
+                - Visible symptoms
+                - Basic precautions
+                - Whether doctor consultation is needed
+
+                Keep response professional and simple.
+                Never guarantee diagnosis.
+                """,
+
+                image
+
+            ])
+
+            return JsonResponse({
+
+                "reply": response.text
+
+            })
+
+        except Exception as e:
+
+            return JsonResponse({
+
+                "reply": str(e)
+
+            })
+@csrf_exempt
+def analyze_pdf(request):
+
+    if request.method == "POST":
+
+        try:
+
+            pdf_file = request.FILES['pdf']
+
+            text = ""
+
+            pdf = fitz.open(
+                stream=pdf_file.read(),
+                filetype="pdf"
+            )
+
+            for page in pdf:
+
+                text += page.get_text()
+
+            prompt = f"""
+            You are a professional medical report analyzer AI.
+
+            Analyze this report professionally.
+
+            Explain:
+            - Important findings
+            - Abnormal values
+            - Possible health concerns
+            - Precautions
+            - Doctor consultation advice
+
+            Keep response simple and professional.
+
+            Report:
+            {text}
+            """
+
+            completion = client.chat.completions.create(
+
+                model="llama-3.3-70b-versatile",
+
+                messages=[
+                    {
+                        "role":"user",
+                        "content":prompt
+                    }
+                ]
+            )
+
+            ai_reply = completion.choices[0].message.content
+
+            return JsonResponse({
+
+                "reply": ai_reply
+
+            })
+
+        except Exception as e:
+
+            return JsonResponse({
+
+                "reply": str(e)
+
+            })
