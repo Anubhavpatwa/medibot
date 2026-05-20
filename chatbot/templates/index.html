@@ -367,7 +367,7 @@ video{
             <h3>📷 Upload Disease Image</h3>
 
             <input type="file" id="imageFile" accept="image/*">
-
+            
             <button onclick="uploadImage()">
              Analyze Image
             </button>
@@ -379,10 +379,15 @@ video{
             <h3>📄 Upload Medical PDF</h3>
 
             <input type="file" id="pdfFile">
-
+            <input 
+                type="text"
+                id="pdfQuestion"
+                placeholder="Ask about report..."
+                class="pdf-question"
+            />
             <button onclick="uploadPDF()">
-    Analyze Report
-</button>
+              Analyze Report
+            </button>
 
         </div>
 
@@ -622,8 +627,10 @@ async function uploadPDF(){
 
     let formData =
     new FormData();
-
     formData.append("pdf", file);
+    let question =
+    document.getElementById("pdfQuestion").value;
+    formData.append("question", question);
 
     let response = await fetch('/analyze-pdf/',{
 

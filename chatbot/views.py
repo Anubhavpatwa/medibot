@@ -4,7 +4,7 @@ import google.generativeai as genai
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
+from rag import process_pdf, search_pdf
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -38,6 +38,7 @@ def chat(request):
             data = json.loads(request.body)
 
             user_message = data.get('message')
+            context = search_pdf(user_message)
             doctor = data.get('doctor')
             if doctor == "Gynecologist":
 
@@ -297,7 +298,10 @@ def chat(request):
                 If question is unrelated to neurology,
                 politely refer the user to Medical Expert or another specialist.
 
-                Patient Question:
+                Relevant Medical Knowledge:
+                {context}
+
+                Patient:
                 {user_message}
                 """
 
@@ -450,6 +454,7 @@ def analyze_image(request):
 
             })
 @csrf_exempt
+@csrf_exempt
 def analyze_pdf(request):
 
     if request.method == "POST":
@@ -458,54 +463,86 @@ def analyze_pdf(request):
 
             pdf_file = request.FILES['pdf']
 
-            text = ""
+            question = request.POST.get("question")
 
-            pdf = fitz.open(
-                stream=pdf_file.read(),
-                filetype="pdf"
-            )
+            pdf_path = f"temp_{pdf_file.name}"
 
-            for page in pdf:
 
-                text += page.get_text()
+            # SAVE PDF
+
+            with open(pdf_path, "wb+") as destination:
+
+                for chunk in pdf_file.chunks():
+
+                    destination.write(chunk)
+
+
+            # PROCESS PDF INTO VECTOR DATABASE
+
+            process_pdf(pdf_path)
+
+
+            # SEARCH RELEVANT CONTENT
+
+            context = search_pdf(question)
+
+
+            # AI PROMPT
 
             prompt = f"""
-            You are a professional medical report analyzer AI.
+            You are an expert medical report analyzer AI.
 
-            Analyze this report professionally.
+            Use ONLY the provided medical report information.
 
-            Explain:
-            - Important findings
-            - Abnormal values
-            - Possible health concerns
-            - Precautions
-            - Doctor consultation advice
+            Medical Report Context:
+            {context}
 
-            Keep response simple and professional.
+            User Question:
+            {question}
 
-            Report:
-            {text}
+            IMPORTANT RULES:
+            - Answer ONLY according to report context
+            - Do not give generic medical advice
+            - If answer is not found in report, clearly say:
+              "This information is not clearly available in the uploaded report."
+            - Keep answer short and precise
+            - No repetition
+            - No markdown
+            - No long paragraphs
+
+            Provide:
+            • Direct answer
+            • Supporting report finding
+            • Simple explanation
             """
+
+            # GROQ RESPONSE
 
             completion = client.chat.completions.create(
 
                 model="llama-3.3-70b-versatile",
 
                 messages=[
+
                     {
                         "role":"user",
                         "content":prompt
                     }
+
                 ]
+
             )
 
+
             ai_reply = completion.choices[0].message.content
+
 
             return JsonResponse({
 
                 "reply": ai_reply
 
             })
+
 
         except Exception as e:
 
